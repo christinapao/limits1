@@ -31,6 +31,8 @@ predictions <- read_dta("/Users/cp5045/Library/CloudStorage/OneDrive-PrincetonUn
 Hegre_predictions <- predictions %>%
   select(year, sh_w_c, model) %>%
   filter(year >= 2010 & year <= 2018)
+
+write.csv(Hegre_predictions, "predictions_by_model.csv")
 ```
 
 ### Data Set 2: Actual Values of Conflict (2010 to 2018)
@@ -51,6 +53,8 @@ real_prop_conflict <- left_join(yearly_conflict_2010_2018, actual_conflict_denom
 
 real_prop_conflict <- real_prop_conflict %>%
   mutate(prop_conflict = num_conflicts/n_countries)
+
+write.csv(real_prop_conflict, "real_prop_conflict.csv")
 ```
 
 ## My Next Proposed Steps
@@ -59,7 +63,7 @@ For the python people!
 
 1. Make an empty data frame which we can fill with a) the RMSE of Hegre et al.'s actual predictions and b) our iterations of the predictions based on different model combinations.
 
-2. Fill the data frame accordingly (via nested loop or function that goes through the different iterations).
+2. Fill the data frame accordingly (via nested loop or function that goes through the different iterations of model combinations). The variable `sh_w_c` in the predictions data set is the share of world conflicts (by each model), which Hegre et al. averaged across all 9 models to get their annual predicted share.
 
 3. Plot the distribution of the RMSEs from the model combination space? Would be nice to plot this in relation to the RMSE of their actual model.
 
