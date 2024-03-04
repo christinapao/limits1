@@ -1,0 +1,76 @@
+---
+title: "Producing Figures"
+author: "CKP"
+format: pdf
+editor: visual
+---
+
+# Data
+
+```{r}
+library(tidyverse)
+
+our_preds <- read.csv("our_predictions_for_all_years.csv")
+
+real_conflict <- read.csv("real_prop_conflict.csv")
+Hegre_preds <- read.csv("predictions_by_model.csv")
+Hegre_preds <- Hegre_preds %>%
+  group_by(year) %>%
+  summarize(hegre_preds = mean(sh_w_c))
+
+
+full_preds <- left_join(our_preds, real_conflict, by = join_by(year))
+
+full_preds <- left_join(full_preds, Hegre_preds, by = join_by(year))
+
+calc_errors <- full_preds %>%
+  mutate(sq_error = (prop_conflict - predictions)^2,
+         abs_error = abs(prop_conflict - predictions),
+         Hegre = ifelse(combination == "(0, 1, 2, 3, 4, 5, 6, 7, 8)", 1, 0))
+
+hegre_errors <- calc_errors %>%
+  filter(Hegre == 1) %>%
+  group_by(year) %>%
+  mutate(hegre_error = abs_error) %>%
+  select(year, hegre_error)
+
+calc_errors <- left_join(calc_errors,hegre_errors, by = join_by(year))
+
+rmses <- calc_errors %>%
+  group_by(combination) %>%
+  summarize(rmse = sqrt(mean(sq_error))) %>%
+  mutate(Hegre = ifelse(combination == "(0, 1, 2, 3, 4, 5, 6, 7, 8)", 1, 0))
+```
+
+# Creating Figure 1
+
+Creating figure of the RMSEs for all of the models across the 2010 to 2018 period.
+
+```{r, warning=F, message = F}
+fig1 <- ggplot(rmses, aes(rmse)) +
+  geom_histogram() +
+  labs(title = "Distribution of RMSEs of Model Combinations", x = "RMSE", y = "Frequency") +
+  geom_vline(xintercept = 0.05893075, colour="red", linetype = "longdash") +
+  annotate("text", x=.057, y=70, label= "Hegre et al.", col="red") +
+  theme_bw()
+fig1
+
+ggsave("fig1.png", width = 5, height = 5, dpi = 300)
+```
+
+# Creating Figure 2
+
+Creating the distribution of absolute error by year.
+
+```{r}
+fig2 <- ggplot(calc_errors, aes(abs_error)) +
+  geom_histogram(bins = 100) +
+  labs(title = "Distribution of Absolute Errors of Model Combos by Year", x = "Absolute Error", y = "Frequency") +
+  geom_vline(aes(xintercept=hegre_error), colour="red", linetype = "longdash") +
+  facet_wrap(~year) +
+  theme_bw()
+fig2
+ggsave("fig2.png", width = 10, height = 6, dpi = 300)
+```
+
+
