@@ -26,7 +26,8 @@ full_preds <- left_join(full_preds, Hegre_preds, by = join_by(year))
 calc_errors <- full_preds %>%
   mutate(sq_error = (prop_conflict - predictions)^2,
          abs_error = abs(prop_conflict - predictions),
-         Hegre = ifelse(combination == "(0, 1, 2, 3, 4, 5, 6, 7, 8)", 1, 0))
+         Hegre = ifelse(combination == "(0, 1, 2, 3, 4, 5, 6, 7, 8)", 1, 0),
+         lowest = ifelse(combination == "(0,)", 1, 0))
 
 hegre_errors <- calc_errors %>%
   filter(Hegre == 1) %>%
@@ -34,7 +35,17 @@ hegre_errors <- calc_errors %>%
   mutate(hegre_error = abs_error) %>%
   select(year, hegre_error)
 
+lowest_rmse <- calc_errors %>%
+  filter(lowest == 1) %>%
+  group_by(year) %>%
+  mutate(lowest_error = abs_error) %>%
+  select(year, lowest_error)
+
+
 calc_errors <- left_join(calc_errors,hegre_errors, by = join_by(year))
+
+
+calc_errors <- left_join(calc_errors,lowest_rmse, by = join_by(year))
 
 rmses <- calc_errors %>%
   group_by(combination) %>%
@@ -66,11 +77,16 @@ Creating the distribution of absolute error by year.
 fig2 <- ggplot(calc_errors, aes(abs_error)) +
   geom_histogram(bins = 100) +
   labs(title = "Distribution of Absolute Errors of Model Combos by Year", x = "Absolute Error", y = "Frequency") +
-  geom_vline(aes(xintercept=hegre_error), colour="red", linetype = "longdash") +
+  geom_vline(aes(xintercept=hegre_error, colour="Hegre et al."), linetype = "longdash") +
+  geom_vline(aes(xintercept=lowest_error, colour="Lowest RMSE"), linetype = "longdash") +
   facet_wrap(~year) +
+  scale_color_manual(name = "Notable Models", values = c("Lowest RMSE" = "blue", "Hegre et al." = "red")) +
   theme_bw()
 fig2
 ggsave("fig2.png", width = 10, height = 6, dpi = 300)
 ```
 
+```{r}
+rmses <- rmses[order(rmses$rmse),]
+```
 
